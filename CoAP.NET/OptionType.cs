@@ -150,6 +150,10 @@ namespace Com.AugustCellars.CoAP
         /// </summary>
         Oscore = 9,
         /// <summary>
+        /// <remarks>RFC 9175</remarks>
+        /// </summary>
+        Echo = 252,
+        /// <summary>
         /// <remarks>RFC 7967</remarks>
         /// </summary>
         NoResponse = 258,

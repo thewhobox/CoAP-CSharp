@@ -868,6 +868,12 @@ namespace Com.AugustCellars.CoAP
             get { return SelectOptions(OptionType.LocationPath, o => o.StringValue); }
         }
 
+        public byte[] Echo
+        {
+            get => HasOption(OptionType.Echo) ? GetFirstOption(OptionType.Echo).RawValue : null;
+            set => SetOption(Option.Create(OptionType.Echo, value ));
+        }
+
         /// <summary>
         /// Add a Location Path option
         /// </summary>

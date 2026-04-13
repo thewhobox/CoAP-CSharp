@@ -262,6 +262,11 @@ namespace Com.AugustCellars.CoAP.Util
                 appendIfNotNullOrEmpty(sb, "OSCOAP", msg.Oscoap.ToString());
             }
 
+            if (msg.Echo != null)
+            {
+                appendIfNotNullOrEmpty(sb, "Echo", ByteArrayUtils.ToHexString(msg.Echo));
+            }
+
             return sb.ToString();
         }
 

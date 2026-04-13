@@ -589,7 +589,7 @@ namespace Com.AugustCellars.CoAP.OSCOAP
         /// <param name="algAEAD">encryption algorithm</param>
         /// <param name="algKeyAgree">key agreement algorithm</param>
         /// <returns></returns>
-        private static EntityContext DeriveEntityContext(byte[] masterSecret, byte[] groupId, byte[] entityId, byte[] masterSalt = null, CBORObject algAEAD = null, CBORObject algKeyAgree = null)
+        public static EntityContext DeriveEntityContext(byte[] masterSecret, byte[] groupId, byte[] entityId, byte[] masterSalt = null, CBORObject algAEAD = null, CBORObject algKeyAgree = null)
         {
             EntityContext ctx = new EntityContext();
             int keySize;
@@ -664,9 +664,14 @@ namespace Com.AugustCellars.CoAP.OSCOAP
 
             return ctx;
         }
-#endregion
+        #endregion
 
-        public bool IsGroupContext => Recipients != null;
+        public void SetIsGroupContext(bool? value)
+        {
+            _isGroupContext = value;
+        }
+        private bool? _isGroupContext;
+        public bool IsGroupContext => _isGroupContext ?? (Recipients != null);
 
         public event EventHandler<OscoreEvent> OscoreEvents;
 

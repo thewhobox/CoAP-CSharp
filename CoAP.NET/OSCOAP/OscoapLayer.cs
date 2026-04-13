@@ -8,11 +8,6 @@
  * Please see README for more information.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Text;
-
 using Com.AugustCellars.CoAP.Log;
 using Com.AugustCellars.CoAP.Net;
 using Com.AugustCellars.CoAP.Stack;
@@ -20,6 +15,11 @@ using Com.AugustCellars.CoAP.Util;
 using Com.AugustCellars.COSE;
 using Org.BouncyCastle.Utilities.Encoders;
 using PeterO.Cbor;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using Attributes = Com.AugustCellars.COSE.Attributes;
 
 namespace Com.AugustCellars.CoAP.OSCOAP
@@ -646,7 +646,8 @@ namespace Com.AugustCellars.CoAP.OSCOAP
 
         public override void ReceiveResponse(INextLayer nextLayer, Exchange exchange, Response response)
         {
-            if (response.HasOption(OptionType.Oscore)) {
+            if (response.HasOption(OptionType.Oscore))
+            {
                 Option op = response.GetFirstOption(OptionType.Oscore);
                 response.RemoveOptions(OptionType.Oscore);
 
@@ -689,7 +690,7 @@ namespace Com.AugustCellars.CoAP.OSCOAP
 
                         ctx = e.SecurityContext;
                     }
-
+                    
                     if (gid == null) {
                         gid = CBORObject.FromObject(ctx.GroupId);
                     }
@@ -712,7 +713,39 @@ namespace Com.AugustCellars.CoAP.OSCOAP
                         fServerIv = false;
                     }
                 }
-                else {
+                else
+                {
+                    CBORObject kid = msg.FindAttribute(HeaderKeys.KeyId);
+                    if (kid == null)
+                    {
+                        //  this is not currently a valid state to be in
+                        return;
+                    }
+
+                    CBORObject gid = msg.FindAttribute(HeaderKeys.KidContext);
+                    if (gid != null && !SecurityContext.ByteArrayComparer.AreEqual(ctx.GroupId, gid.GetByteString()))
+                    {
+                        OscoreEvent eg = new OscoreEvent(OscoreEvent.EventCode.UnknownGroupIdentifier, gid.GetByteString(), kid.GetByteString(), null, null);
+                        ctx.OnEvent(eg);
+
+                        if (eg.SecurityContext == null)
+                        {
+                            return;
+                        }
+
+                        ctx = eg.SecurityContext;
+
+                        OscoreEvent ek = new OscoreEvent(OscoreEvent.EventCode.UnknownKeyIdentifier, gid.GetByteString(), kid.GetByteString(), ctx, null);
+                        ctx.OnEvent(ek);
+
+                        if (ek.RecipientContext == null)
+                        {
+                            return;
+                        }
+
+                        recip = ek.RecipientContext;
+                    }
+
                     if (msg.FindAttribute(HeaderKeys.PartialIV) == null) {
                         msg.AddAttribute(HeaderKeys.PartialIV, CBORObject.FromObject(ctx.Sender.PartialIV),
                                          Attributes.DO_NOT_SEND);
@@ -746,7 +779,7 @@ namespace Com.AugustCellars.CoAP.OSCOAP
                 aad.Add(CBORObject.NewArray());
                 aad[1].Add(recip.Algorithm);
                 aad.Add(ctx.Sender.Id);
-                aad.Add(ctx.Sender.PartialIV);
+                aad.Add(partialIV);
                 aad.Add(CBORObject.FromObject(new byte[0])); // OPTIONS
 
                 if (ctx.Sender.SigningAlgorithm != null) {
